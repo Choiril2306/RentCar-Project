@@ -1,0 +1,12 @@
+[
+  {
+    "id": "VHC-001",
+    "name": "Toyota Avanza",
+    "stock": 5
+  },
+  {
+    "id": "VHC-002",
+    "name": "Honda Brio",
+    "stock": 3
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "username": "budi_gold",
+    "member_type": "GOLD"
+  },
+  {
+    "username": "siti_silver",
+    "member_type": "SILVER"
+  },
+  {
+    "username": "andi_regular",
+    "member_type": "REGULAR"
+  }
+]

@@ -1,0 +1,1 @@
+{"version":2,"defects":[],"times":{"RentTest::testBasicCalculation":0.005,"RentTest::testPeakSeasonSurcharge":0.003,"RentTest::testSUVGoldDiscount":0.003,"RentTest::testDatabaseExists":0.005,"RentTest::testSeedDataCopied":0.003,"SystemTest::testFrontendCanBeAccessed":0.06,"SystemTest::testCatalogVehicleDisplayed":0.004,"SystemTest::testRentalFormExists":0.005}}

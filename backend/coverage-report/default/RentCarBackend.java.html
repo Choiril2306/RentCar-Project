@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RentCarBackend.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">default</a> &gt; <span class="el_source">RentCarBackend.java</span></div><h1>RentCarBackend.java</h1><pre class="source lang-java linenums">import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+<span class="nc" id="L12">public class RentCarBackend {</span>
+
+    public static void main(String[] args) throws IOException {
+<span class="nc" id="L15">        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);</span>
+<span class="nc" id="L16">        server.createContext(&quot;/api/rent&quot;, new RentHandler());</span>
+<span class="nc" id="L17">        server.setExecutor(null);</span>
+<span class="nc" id="L18">        server.start();</span>
+<span class="nc" id="L19">        System.out.println(&quot;Backend server berjalan di port 8080...&quot;);</span>
+<span class="nc" id="L20">    }</span>
+
+<span class="fc" id="L22">    static class RentHandler implements HttpHandler {</span>
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            // 1. Tambahkan Header CORS agar PHP di Laragon diizinkan mengakses port 8080
+<span class="nc" id="L26">            exchange.getResponseHeaders().set(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;);</span>
+<span class="nc" id="L27">            exchange.getResponseHeaders().set(&quot;Access-Control-Allow-Methods&quot;, &quot;POST, GET, OPTIONS&quot;);</span>
+<span class="nc" id="L28">            exchange.getResponseHeaders().set(&quot;Access-Control-Allow-Headers&quot;, &quot;Content-Type&quot;);</span>
+
+            // 2. Tangani Method OPTIONS (Jabat tangan HTTP Client)
+<span class="nc bnc" id="L31" title="All 2 branches missed.">            if (&quot;OPTIONS&quot;.equalsIgnoreCase(exchange.getRequestMethod())) {</span>
+<span class="nc" id="L32">                exchange.sendResponseHeaders(204, -1);</span>
+<span class="nc" id="L33">                return;</span>
+            }
+
+            // 3. Validasi utama: Harus POST
+<span class="nc bnc" id="L37" title="All 2 branches missed.">            if (!exchange.getRequestMethod().equalsIgnoreCase(&quot;POST&quot;)) {</span>
+<span class="nc" id="L38">                sendJsonResponse(exchange, 405, &quot;{\&quot;status\&quot;:\&quot;FAILED\&quot;,\&quot;message\&quot;:\&quot;Method tidak diizinkan.\&quot;}&quot;);</span>
+<span class="nc" id="L39">                return;</span>
+            }
+
+<span class="nc" id="L42">            InputStream is = exchange.getRequestBody();</span>
+<span class="nc" id="L43">            String body = new String(is.readAllBytes(), &quot;UTF-8&quot;);</span>
+
+<span class="nc" id="L45">            String username = extractJsonValue(body, &quot;username&quot;);</span>
+<span class="nc" id="L46">            String carId = extractJsonValue(body, &quot;car_id&quot;);</span>
+<span class="nc" id="L47">            int duration = Integer.parseInt(extractJsonValue(body, &quot;duration&quot;));</span>
+<span class="nc" id="L48">            int quantity = Integer.parseInt(extractJsonValue(body, &quot;quantity&quot;));</span>
+<span class="nc" id="L49">            String season = extractJsonValue(body, &quot;season&quot;);</span>
+
+<span class="nc" id="L51">            String usersJson = new String(Files.readAllBytes(Paths.get(&quot;data/users.json&quot;)), &quot;UTF-8&quot;);</span>
+<span class="nc" id="L52">            String productsJson = new String(Files.readAllBytes(Paths.get(&quot;data/products.json&quot;)), &quot;UTF-8&quot;);</span>
+
+<span class="nc" id="L54">            String memberType = &quot;REGULAR&quot;;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (usersJson.contains(&quot;\&quot;username\&quot;:\&quot;&quot; + username + &quot;\&quot;&quot;)) {</span>
+<span class="nc" id="L56">                int userIndex = usersJson.indexOf(&quot;\&quot;username\&quot;:\&quot;&quot; + username + &quot;\&quot;&quot;);</span>
+<span class="nc" id="L57">                String subUser = usersJson.substring(userIndex);</span>
+<span class="nc" id="L58">                memberType = extractJsonValue(subUser, &quot;member_type&quot;);</span>
+            }
+
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (!productsJson.contains(&quot;\&quot;id\&quot;:\&quot;&quot; + carId + &quot;\&quot;&quot;)) {</span>
+<span class="nc" id="L62">                sendJsonResponse(exchange, 400, &quot;{\&quot;status\&quot;:\&quot;FAILED\&quot;,\&quot;message\&quot;:\&quot;Kendaraan tidak ditemukan.\&quot;}&quot;);</span>
+<span class="nc" id="L63">                return;</span>
+            }
+
+<span class="nc" id="L66">            int pIndex = productsJson.indexOf(&quot;\&quot;id\&quot;:\&quot;&quot; + carId + &quot;\&quot;&quot;);</span>
+<span class="nc" id="L67">            String subProduct = productsJson.substring(pIndex);</span>
+<span class="nc" id="L68">            String carName = extractJsonValue(subProduct, &quot;name&quot;);</span>
+<span class="nc" id="L69">            String category = extractJsonValue(subProduct, &quot;category&quot;);</span>
+<span class="nc" id="L70">            double pricePerDay = Double.parseDouble(extractJsonValue(subProduct, &quot;price_per_day&quot;));</span>
+<span class="nc" id="L71">            int stock = Integer.parseInt(extractJsonValue(subProduct, &quot;stock&quot;));</span>
+
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (quantity &gt; stock) {</span>
+<span class="nc" id="L74">                sendJsonResponse(exchange, 400, &quot;{\&quot;status\&quot;:\&quot;FAILED\&quot;,\&quot;message\&quot;:\&quot;Stok kendaraan tidak mencukupi.\&quot;}&quot;);</span>
+<span class="nc" id="L75">                return;</span>
+            }
+
+<span class="nc" id="L78">            double baseTotal = pricePerDay * duration * quantity;</span>
+
+<span class="nc" id="L80">            double discountRate = 0.0;</span>
+<span class="nc" id="L81">            double surchargeRate = 0.0;</span>
+
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (category.equals(&quot;ECONOMY&quot;)) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                if (duration &gt; 3) {</span>
+<span class="nc" id="L85">                    discountRate = 0.05;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;)) {</span>
+<span class="nc" id="L87">                        discountRate = 0.15;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                    } else if (memberType.equals(&quot;SILVER&quot;)) {</span>
+<span class="nc" id="L89">                        discountRate = 0.10;</span>
+                    }
+                } else {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;)) {</span>
+<span class="nc" id="L93">                        discountRate = 0.05;</span>
+                    }
+                }
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                if (season.equals(&quot;PEAK&quot;)) {</span>
+<span class="nc" id="L97">                    surchargeRate = 0.10;</span>
+                }
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            } else if (category.equals(&quot;SUV&quot;)) {</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                if (duration &gt; 5) {</span>
+<span class="nc" id="L101">                    discountRate = 0.10;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;)) {</span>
+<span class="nc" id="L103">                        discountRate = 0.25;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                    } else if (memberType.equals(&quot;SILVER&quot;)) {</span>
+<span class="nc" id="L105">                        discountRate = 0.15;</span>
+                    }
+                } else {
+<span class="nc bnc" id="L108" title="All 4 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;) || memberType.equals(&quot;SILVER&quot;)) {</span>
+<span class="nc" id="L109">                        discountRate = 0.05;</span>
+                    }
+                }
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                if (season.equals(&quot;PEAK&quot;)) {</span>
+<span class="nc" id="L113">                    surchargeRate = 0.20;</span>
+                }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            } else if (category.equals(&quot;LUXURY&quot;)) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (duration &gt; 7) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;)) {</span>
+<span class="nc" id="L118">                        discountRate = 0.30;</span>
+                    } else {
+<span class="nc" id="L120">                        discountRate = 0.10;</span>
+                    }
+                }
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                if (season.equals(&quot;PEAK&quot;)) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                    if (memberType.equals(&quot;GOLD&quot;)) {</span>
+<span class="nc" id="L125">                        surchargeRate = 0.15;</span>
+                    } else {
+<span class="nc" id="L127">                        surchargeRate = 0.35;</span>
+                    }
+                }
+            }
+
+<span class="nc" id="L132">            double discountAmount = baseTotal * discountRate;</span>
+<span class="nc" id="L133">            double surchargeAmount = baseTotal * surchargeRate;</span>
+<span class="nc" id="L134">            double finalTotal = baseTotal - discountAmount + surchargeAmount;</span>
+
+<span class="nc" id="L136">            String orderId = &quot;ORD-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase();</span>
+
+            // Menggunakan format .2f agar menghasilkan angka desimal JSON yang valid (misal: 150000.00)
+<span class="nc" id="L139">            String orderRecord = String.format(</span>
+                &quot;{\&quot;order_id\&quot;:\&quot;%s\&quot;,\&quot;username\&quot;:\&quot;%s\&quot;,\&quot;car_id\&quot;:\&quot;%s\&quot;,\&quot;final_total\&quot;:%.2f},&quot;,
+<span class="nc" id="L141">                orderId, username, carId, finalTotal</span>
+            );
+
+<span class="nc" id="L144">            String ordersPath = &quot;data/orders.json&quot;;</span>
+<span class="nc" id="L145">            String currentOrders = new String(Files.readAllBytes(Paths.get(ordersPath)), &quot;UTF-8&quot;).trim();</span>
+            String updatedOrders;
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            if (currentOrders.equals(&quot;[]&quot;)) {</span>
+<span class="nc" id="L148">                updatedOrders = &quot;[&quot; + orderRecord.substring(0, orderRecord.length() - 1) + &quot;]&quot;;</span>
+            } else {
+<span class="nc" id="L150">                updatedOrders = currentOrders.substring(0, currentOrders.length() - 1) + &quot;,&quot; + orderRecord.substring(0, orderRecord.length() - 1) + &quot;]&quot;;</span>
+            }
+<span class="nc" id="L152">            Files.write(Paths.get(ordersPath), updatedOrders.getBytes(&quot;UTF-8&quot;));</span>
+
+<span class="nc" id="L154">            String jsonResponse = String.format(</span>
+                &quot;{\&quot;status\&quot;:\&quot;SUCCESS\&quot;,\&quot;order_id\&quot;:\&quot;%s\&quot;,\&quot;username\&quot;:\&quot;%s\&quot;,\&quot;member_type\&quot;:\&quot;%s\&quot;,\&quot;car_name\&quot;:\&quot;%s\&quot;,\&quot;base_total\&quot;:%.2f,\&quot;discount_amount\&quot;:%.2f,\&quot;surcharge_amount\&quot;:%.2f,\&quot;final_total\&quot;:%.2f}&quot;,
+<span class="nc" id="L156">                orderId, username, memberType, carName, baseTotal, discountAmount, surchargeAmount, finalTotal</span>
+            );
+
+<span class="nc" id="L159">            sendJsonResponse(exchange, 200, jsonResponse);</span>
+<span class="nc" id="L160">        }</span>
+
+        public static String extractJsonValue(String json, String key) {
+<span class="fc" id="L163">            String pattern = &quot;\&quot;&quot; + key + &quot;\&quot;:\&quot;&quot;;</span>
+<span class="fc" id="L164">            int start = json.indexOf(pattern);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            if (start != -1) {</span>
+<span class="fc" id="L166">                start += pattern.length();</span>
+<span class="fc" id="L167">                int end = json.indexOf(&quot;\&quot;&quot;, start);</span>
+<span class="fc" id="L168">                return json.substring(start, end);</span>
+            } else {
+<span class="fc" id="L170">                String numPattern = &quot;\&quot;&quot; + key + &quot;\&quot;:&quot;;</span>
+<span class="fc" id="L171">                int numStart = json.indexOf(numPattern);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                if (numStart != -1) {</span>
+<span class="fc" id="L173">                    numStart += numPattern.length();</span>
+<span class="fc" id="L174">                    int end = json.indexOf(&quot;,&quot;, numStart);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">                    if (end == -1) {</span>
+<span class="nc" id="L176">                        end = json.indexOf(&quot;}&quot;, numStart);</span>
+                    }
+<span class="fc" id="L178">                    return json.substring(numStart, end).trim();</span>
+                }
+            }
+<span class="fc" id="L181">            return &quot;&quot;;</span>
+        }
+
+        private void sendJsonResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+<span class="nc" id="L185">            byte[] bytes = response.getBytes(&quot;UTF-8&quot;);</span>
+<span class="nc" id="L186">            exchange.getResponseHeaders().set(&quot;Content-Type&quot;, &quot;application/json&quot;);</span>
+<span class="nc" id="L187">            exchange.sendResponseHeaders(statusCode, bytes.length);</span>
+<span class="nc" id="L188">            OutputStream os = exchange.getResponseBody();</span>
+<span class="nc" id="L189">            os.write(bytes);</span>
+<span class="nc" id="L190">            os.close();</span>
+<span class="nc" id="L191">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

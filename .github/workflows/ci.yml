@@ -1,0 +1,49 @@
+name: RentCar CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer Dependencies
+        run: |
+          cd frontend
+          composer install
+
+      - name: Compile Java Backend
+        run: |
+          cd backend
+          javac *.java
+
+      - name: Run Unit Test
+        run: |
+          cd backend
+          java RentCarBackendTest
+
+      - name: Run Integration Test
+        run: |
+          cd frontend
+          php integration_test.php
+
+      - name: Run System Test
+        run: |
+          cd frontend
+          ./vendor/bin/phpunit test/SystemTest.php

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "VHC-001",
+    "name": "Avanza Eco",
+    "category": "ECONOMY",
+    "price_per_day": 350000,
+    "stock": 5
+  },
+  {
+    "id": "VHC-002",
+    "name": "Fortuner Sport",
+    "category": "SUV",
+    "price_per_day": 800000,
+    "stock": 2
+  },
+  {
+    "id": "VHC-003",
+    "name": "Alphard Executive",
+    "category": "LUXURY",
+    "price_per_day": 2000000,
+    "stock": 1
+  }
+]

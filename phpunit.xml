@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php">
+
+    <testsuites>
+        <testsuite name="Application">
+            <directory>test</directory>
+            <file>IntegrationTest.php</file>
+            <file>ProxyTest.php</file>
+            <file>RentTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <include>
+            <file>rent.php</file>
+            <file>index.php</file>
+        </include>
+    </coverage>
+
+</phpunit>
