@@ -2,92 +2,77 @@ name: Continuous Integration Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [ main, master ]
 
 jobs:
   test-and-audit:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      # Setup Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+    # Setup Node.js untuk mengeksekusi system_test.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-      # Install dependency Node.js
-      - name: Install Node Dependencies
-        run: npm install
+    - name: Install Node Dependencies
+      run: npm install
 
-      # Install Playwright + Chromium Browser
-      - name: Install Playwright Browser
-        run: |
-          npx playwright install --with-deps chromium
+    # Setup Java untuk Backend Engine
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      # Setup Java
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    # Setup PHP dan Xdebug untuk Frontend & Perhitungan Metrik
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: json, curl, mbstring, xdebug
+        coverage: xdebug
 
-      # Setup PHP
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: json,curl,mbstring,xdebug
-          coverage: xdebug
+    # --- TAMBAHAN UNTUK MEMPERBAIKI ERROR PHPUNIT ---
+    - name: Install Composer Dependencies
+      run: |
+        cd frontend
+        composer install
 
-      # Compile Backend Java
-      - name: Compile Java Backend
-        run: |
-          cd backend
-          javac RentCarBackend.java
+    - name: Run System Test (PHPUnit)
+      run: |
+        cd frontend
+        chmod +x ./vendor/bin/phpunit
+        ./vendor/bin/phpunit
+    # ------------------------------------------------
 
-      # Jalankan Backend Java
-      - name: Run Java Backend
-        run: |
-          cd backend
-          nohup java RentCarBackend > backend.log 2>&1 &
-          sleep 3
+    # Jalankan Backend Java di Latar Belakang (Port 8080)
+    - name: Run Java Backend
+      run: |
+        cd backend
+        javac RentCarBackend.java
+        java RentCarBackend &
 
-      # Jalankan PHP Server
-      - name: Start PHP Web Server
-        run: |
-          cd frontend
-          nohup php -S localhost:8000 > php.log 2>&1 &
-          sleep 3
+    # Jalankan Frontend PHP di Latar Belakang (Port 8000)
+    - name: Start PHP Web Server
+      run: |
+        cd frontend
+        php -S localhost:8000 &
 
-      # Tunggu server siap
-      - name: Wait for Servers to Boot
-        run: sleep 10
+    # Beri waktu 5 detik bagi kedua server untuk menyala
+    - name: Wait for Servers to Boot
+      run: sleep 5
 
-      # Verifikasi Backend
-      - name: Verify Backend Running
-        run: |
-          curl http://localhost:8080 || true
+    # Eksekusi System Test (JavaScript) untuk menguji skenario transaksi sewa
+    - name: Run System Integration Test
+      run: node system_test.js
 
-      # Verifikasi Frontend
-      - name: Verify Frontend Running
-        run: |
-          curl http://localhost:8000 || true
-
-      # Jalankan System Test
-      - name: Run System Integration Test
-        run: node system_test.js
-
-      # Jalankan Analisis Metrik Kualitas
-      - name: Verify Quality Code Coverage Metrics
-        run: php coverage_metrics.php
+    # Eksekusi dan Tampilkan Laporan Hasil Hitung Analisis Metrik Kualitas Kode
+    - name: Verify Quality Code Coverage Metrics
+      run: php coverage_metrics.php
