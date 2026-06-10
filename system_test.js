@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
     let passed = 0;
     let failed = 0;
 
-    const browser = await chromium.launch({ headless: false }); // headless: false agar browser terlihat
+    const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
 
     try {
@@ -58,9 +58,8 @@ const { chromium } = require('playwright');
             console.log('[OK] PASS: Transaksi berhasil - ' + statusText);
             passed++;
         } else {
-            console.log('[INFO] Status transaksi: ' + statusText);
-            console.log('[OK] PASS: Halaman hasil transaksi tampil');
-            passed++;
+            console.log('[FAIL] Status transaksi: ' + statusText);
+            failed++;
         }
 
     } catch (err) {

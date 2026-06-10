@@ -57,26 +57,26 @@ jobs:
         chmod +x ./vendor/bin/phpunit
         ./vendor/bin/phpunit
 
-    # Jalankan Backend Java di Latar Belakang
-    - name: Run Java Backend
+    # Jalankan Server & System Test dalam satu step (biar background process tetap hidup)
+    - name: Run Servers and Integration Test
       run: |
         cd backend
         javac RentCarBackend.java
         java RentCarBackend &
+        JAVA_PID=$!
 
-    # Jalankan Frontend PHP di Latar Belakang
-    - name: Start PHP Web Server
-      run: |
-        cd frontend
+        cd ../frontend
         php -S localhost:8000 &
+        PHP_PID=$!
 
-    # Beri waktu bagi server untuk menyala
-    - name: Wait for Servers to Boot
-      run: sleep 5
+        sleep 5
 
-    # Eksekusi System Test (JavaScript)
-    - name: Run System Integration Test
-      run: node system_test.js
+        cd ..
+        node system_test.js
+        EXIT_CODE=$?
+
+        kill $JAVA_PID $PHP_PID 2>/dev/null
+        exit $EXIT_CODE
 
     # Eksekusi Analisis Metrik
     - name: Verify Quality Code Coverage Metrics

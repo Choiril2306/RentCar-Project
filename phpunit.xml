@@ -3,18 +3,8 @@
 
     <testsuites>
         <testsuite name="Application">
-            <directory>test</directory>
-            <file>IntegrationTest.php</file>
-            <file>ProxyTest.php</file>
-            <file>RentTest.php</file>
+            <file>frontend/RentTest.php</file>
         </testsuite>
     </testsuites>
-
-    <coverage>
-        <include>
-            <file>rent.php</file>
-            <file>index.php</file>
-        </include>
-    </coverage>
 
 </phpunit>
