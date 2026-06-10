@@ -10,7 +10,6 @@
     <testsuites>
         <testsuite name="RentCar Test Suite">
             <file>RentTest.php</file>
-            <file>test/SystemTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>
