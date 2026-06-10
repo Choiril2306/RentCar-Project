@@ -7,7 +7,7 @@ class SystemTest extends TestCase
     public function testFrontendCanBeAccessed()
     {
         $content = file_get_contents(
-            "http://localhost/rentcar-project/frontend/index.php"
+            "http://localhost/frontend/index.php"
         );
 
         $this->assertStringContainsString(
@@ -19,7 +19,7 @@ class SystemTest extends TestCase
     public function testCatalogVehicleDisplayed()
     {
         $content = file_get_contents(
-            "http://localhost/rentcar-project/frontend/index.php"
+            "http://localhost/frontend/index.php"
         );
 
         $this->assertStringContainsString(
@@ -31,7 +31,7 @@ class SystemTest extends TestCase
     public function testRentalFormExists()
     {
         $content = file_get_contents(
-            "http://localhost/rentcar-project/frontend/index.php"
+            "http://localhost/frontend/index.php"
         );
 
         $this->assertStringContainsString(
