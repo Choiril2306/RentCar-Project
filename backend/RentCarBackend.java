@@ -102,7 +102,7 @@ public class RentCarBackend {
                     if (memberType.equals("GOLD")) {
                         discountRate = 0.25;
                     } else if (memberType.equals("SILVER")) {
-                        discountRate = 0.99
+                        discountRate = 0.99;
                     }
                 } else {
                     if (memberType.equals("GOLD") || memberType.equals("SILVER")) {
