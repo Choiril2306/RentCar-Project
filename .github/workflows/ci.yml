@@ -1,49 +1,65 @@
-name: RentCar CI Pipeline
+name: Continuous Integration Pipeline
 
 on:
   push:
+    branches: [ main, master ]
   pull_request:
+    branches: [ main, master ]
 
 jobs:
-  build-and-test:
+  test-and-audit:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    # Setup Node.js untuk mengeksekusi system_test.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
+    - name: Install Node Dependencies
+      run: npm install
 
-      - name: Install Composer Dependencies
-        run: |
-          cd frontend
-          composer install
+    # Setup Java untuk Backend Engine
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      - name: Compile Java Backend
-        run: |
-          cd backend
-          javac *.java
+    # Setup PHP dan Xdebug untuk Frontend & Perhitungan Metrik
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: json, curl, mbstring, xdebug
+        coverage: xdebug
 
-      - name: Run Unit Test
-        run: |
-          cd backend
-          java RentCarBackendTest
+    # Jalankan Backend Java di Latar Belakang (Port 8080)
+    - name: Run Java Backend
+      run: |
+        cd backend
+        javac RentCarBackend.java
+        java RentCarBackend &
 
-      - name: Run Integration Test
-        run: |
-          cd frontend
-          php integration_test.php
+    # Jalankan Frontend PHP di Latar Belakang (Port 8000)
+    - name: Start PHP Web Server
+      run: |
+        cd frontend
+        php -S localhost:8000 &
 
-      - name: Run System Test
-        run: |
-          cd frontend
-          ./vendor/bin/phpunit test/SystemTest.php
+    # Beri waktu 5 detik bagi kedua server untuk menyala
+    - name: Wait for Servers to Boot
+      run: sleep 5
+
+    # Eksekusi System Test (JavaScript) untuk menguji skenario transaksi sewa
+    - name: Run System Integration Test
+      run: node system_test.js
+
+    # Eksekusi dan Tampilkan Laporan Hasil Hitung Analisis Metrik Kualitas Kode
+    - name: Verify Quality Code Coverage Metrics
+      run: php coverage_metrics.php
